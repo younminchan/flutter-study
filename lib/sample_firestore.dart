@@ -1,9 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_practice/firebase_options.dart';
 import 'package:flutter_practice/model/ChatModel.dart';
-import 'firebase_options.dart';
 
 class SampleFirestore extends StatefulWidget {
   const SampleFirestore({super.key});
@@ -17,38 +14,153 @@ class _SampleFirestoreState extends State<SampleFirestore> {
   final String title = 'SampleFirestore_title';
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final List<String> list = <String>['1', '2'];
+  final List<QueryDocumentSnapshot> messageList = <QueryDocumentSnapshot>[];
   final List<ChatModel> chatList = <ChatModel>[];
 
   ScrollController scrollController = ScrollController();
+
+  final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
+      .collection('flutter')
+      .orderBy('time', descending: false)
+      .snapshots();
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold( //앱 화면이 기본적으로 갖춘 기능을 선언한 위젯
       appBar: AppBar(
-        title: Text(
-          title,
-        ),
+        title: Text(title),
       ),
       body: Column(
         //mainAxisAlignment: MainAxisAlignment.center,
         children: [
           /** List */
           Expanded(
-            child: ListView.builder(
-              reverse: true,
-              controller: scrollController,
-              itemCount: list.length,
-              itemBuilder: (BuildContext context, int index){
-                return Container(
-                  height: 50,
-                  color: Colors.greenAccent,
-                  child: Center(
-                    child: Text('Name: ${list[index]}'),
-                  ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _usersStream,
+              builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.hasError) {
+                  return const Text('Something went wrong');
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Text("Loading");
+                }
+
+                return ListView.builder(
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    DocumentSnapshot document = snapshot.data!.docs[index];
+                    Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
+
+                    final Timestamp timestamp = data['timeStamp'];
+                    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
+
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          child: Container(
+                            padding: EdgeInsets.all(20),
+                            margin: EdgeInsets.all(10),
+                            color: Color(0xff808080),
+                            child: Column(
+                              children: [
+                                Text("age: ${data['age']} / email: ${data['email']}"),
+                                Text("timestamp: $dateTime"),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+
+                    // return ListTile(
+                    //   tileColor: Colors.red,
+                    //   title: Text(data['name']),
+                    //   subtitle: Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       Text("age: ${data['age']} / email: ${data['email']}"),
+                    //       Text("timestamp: $dateTime"),
+                    //     ],
+                    //   ),
+                    // );
+                  },
                 );
+
               },
+            ),
+
+            // <기존 코드 백업>
+            // child: ListView.builder(
+            //   reverse: true,
+            //   controller: scrollController,
+            //   itemCount: messageList.length,
+            //   itemBuilder: (BuildContext context, int index){
+            //     return Container(
+            //       height: 50,
+            //       color: Colors.greenAccent,
+            //       child: Center(
+            //         child: Text('Name: ${messageList[index]['name']} / Age: ${messageList[index]['age']} / Email: ${messageList[index]['email']}'),
+            //       ),
+            //     );
+            //   },
+
+          ),
+
+          /** (메세지) 다른사람 */
+          Container(
+            padding: EdgeInsets.all(10),
+            color: Colors.green, //나중에 삭제
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                //이름
+                Container(
+                  margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                  child: SizedBox(
+                      child: Text("UserName")
+                  ),
+                ),
+
+                //메세지
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Flexible( //자동 줄바꿈이 가능한 Flexible
+                      child: Container(
+                        padding: EdgeInsets.all(20),
+                        color: Color(0xfffef01b),
+                        child: Text("Message"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          /** (메세지) 나 */
+          Container(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(
+                  child: Container(
+                    padding: EdgeInsets.all(20),
+                    margin: EdgeInsets.all(10),
+                    color: Color(0xfffef01b),
+                    child: Column(
+                      children: [
+                        Text("이름"),
+                        Text("메세지"),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -75,7 +187,7 @@ class _SampleFirestoreState extends State<SampleFirestore> {
   @override
   void initState() {
     super.initState();
-    firestoreSnapshots();
+    //firestoreSnapshots();
   }
 
   @override
@@ -84,15 +196,48 @@ class _SampleFirestoreState extends State<SampleFirestore> {
     scrollController.dispose();
   }
 
+  /** Firestore에 데이터 추가하는 함수 */
+  Future<void> addDataToFirestore() async {
+    try {
+      final Timestamp timestamp = Timestamp.now();
+      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
+
+      await firestore.collection('flutter').add({
+        'name': 'John Doe_${DateTime.now().millisecondsSinceEpoch}',
+        'age': 30,
+        'email': 'johndoe@example.com',
+        'timeStamp' : timestamp,
+        'time' : dateTime,
+      });
+
+      print('Data added to Firestore');
+
+      //firesotre 최신화
+      //await readDataFromFirestore();
+    } catch (e) {
+      print('Error adding data to Firestore: $e');
+    }
+  }
+
+
+
+
+
+
+
+
+
+  /** Firestore 데이터 싱크 - 동작을 안하는듯? */
   Future<void> firestoreSnapshots() async {
     StreamBuilder(
-        stream: FirebaseFirestore.instance.collection("users").orderBy('timeStamp', descending: true).snapshots(),
+        stream: FirebaseFirestore.instance.collection("flutter").orderBy('timeStamp', descending: false).snapshots(),
         builder: ((context, snapshot) {
           try {
             print('snapshot.data?.docChanges.length: ${snapshot.data?.docChanges.length}');
             if (snapshot.data?.docChanges.length != null) {
+              print("여기는 들어오나?");
               for (DocumentChange item in snapshot.data!.docChanges) {
-
+                print("firestoreSnapshots ${item.doc.data()}");
                 // if(item.type == DocumentChangeType.added){
                 //
                 // }
@@ -105,42 +250,24 @@ class _SampleFirestoreState extends State<SampleFirestore> {
             print('Error firestoreSnapshots: $e');
           }
           return Container(
-
           );
+
         }));
-  }
-
-  /** Firestore에 데이터 추가하는 함수 */
-  Future<void> addDataToFirestore() async {
-    try {
-      await firestore.collection('users').add({
-        'name': 'John Doe_${DateTime.now().millisecondsSinceEpoch}',
-        'age': 30,
-        'email': 'johndoe@example.com',
-        'timeStamp' : Timestamp.now(),
-      });
-
-      print('Data added to Firestore');
-
-      //firesotre 최신화
-      await readDataFromFirestore();
-    } catch (e) {
-      print('Error adding data to Firestore: $e');
-    }
   }
 
   /** Firestore에서 데이터 읽어오는 함수 */
   Future<void> readDataFromFirestore() async {
     try {
-      QuerySnapshot querySnapshot = await firestore.collection('users').orderBy('timeStamp', descending: true).get();
+      QuerySnapshot querySnapshot = await firestore.collection('flutter').orderBy('timeStamp', descending: true).get();
       for (QueryDocumentSnapshot doc in querySnapshot.docs) {
         print('Name: ${doc['name']}, Age: ${doc['age']}, Email: ${doc['email']}');
       }
 
       //데이터 추가에 따른 UI 동작
       setState(() {
-        list.clear();
-        list.addAll(querySnapshot.docs.map((e) => '${e['name']}'));
+        messageList.clear();
+        messageList.addAll(querySnapshot.docs);
+
         scrollController.jumpTo(-1); //최하단 스크롤
       });
     } catch (e) {
