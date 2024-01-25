@@ -11,7 +11,7 @@ class SampleFirestore extends StatefulWidget {
 
 class _SampleFirestoreState extends State<SampleFirestore> {
   //화면상단에 표시될 제목. final이 붙어 더이상 변경되지 않는다.
-  final String title = 'SampleFirestore_title';
+  final String title = 'Flutter Firestore talk';
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final List<QueryDocumentSnapshot> messageList = <QueryDocumentSnapshot>[];
@@ -56,25 +56,28 @@ class _SampleFirestoreState extends State<SampleFirestore> {
                     final Timestamp timestamp = data['timeStamp'];
                     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
 
+                    return otherMessageUI(data, dateTime);
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          child: Container(
-                            padding: EdgeInsets.all(20),
-                            margin: EdgeInsets.all(10),
-                            color: Color(0xff808080),
-                            child: Column(
-                              children: [
-                                Text("age: ${data['age']} / email: ${data['email']}"),
-                                Text("timestamp: $dateTime"),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
+                    // return Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     SizedBox(
+                    //       child: Container(
+                    //         padding: EdgeInsets.all(20),
+                    //         margin: EdgeInsets.all(10),
+                    //         color: Color(0xff808080),
+                    //         child: Column(
+                    //           mainAxisAlignment: MainAxisAlignment.start,
+                    //           children: [
+                    //             Text("name: ${data['name']}"),
+                    //             Text("message: ${data['message']}"),
+                    //             Text("timestamp: $dateTime"),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ],
+                    // );
 
                     // return ListTile(
                     //   tileColor: Colors.red,
@@ -110,57 +113,22 @@ class _SampleFirestoreState extends State<SampleFirestore> {
 
           ),
 
-          /** (메세지) 다른사람 */
-          Container(
-            padding: EdgeInsets.all(10),
-            color: Colors.green, //나중에 삭제
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                //이름
-                Container(
-                  margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                  child: SizedBox(
-                      child: Text("UserName")
-                  ),
-                ),
-
-                //메세지
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+          SizedBox(
+            child: SizedBox(
+              child: Container(
+                color: Colors.yellow,
+                padding: EdgeInsets.all(10),
+                child: Column(
                   children: [
-                    Flexible( //자동 줄바꿈이 가능한 Flexible
-                      child: Container(
-                        padding: EdgeInsets.all(20),
-                        color: Color(0xfffef01b),
-                        child: Text("Message"),
+                    TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: '메세지를 입력해주세요.',
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          /** (메세지) 나 */
-          Container(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SizedBox(
-                  child: Container(
-                    padding: EdgeInsets.all(20),
-                    margin: EdgeInsets.all(10),
-                    color: Color(0xfffef01b),
-                    child: Column(
-                      children: [
-                        Text("이름"),
-                        Text("메세지"),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
@@ -203,9 +171,8 @@ class _SampleFirestoreState extends State<SampleFirestore> {
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
 
       await firestore.collection('flutter').add({
-        'name': 'John Doe_${DateTime.now().millisecondsSinceEpoch}',
-        'age': 30,
-        'email': 'johndoe@example.com',
+        'name': 'TestUser',
+        'message': "test_${DateTime.now().millisecondsSinceEpoch}",
         'timeStamp' : timestamp,
         'time' : dateTime,
       });
@@ -218,6 +185,114 @@ class _SampleFirestoreState extends State<SampleFirestore> {
       print('Error adding data to Firestore: $e');
     }
   }
+
+  /** (메세지) 다른사람 */
+  Widget otherMessageUI(Map<String, dynamic> data, DateTime dateTime) {
+    return Container(
+      padding: EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          //이름
+          Container(
+            margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: SizedBox(
+              child: Text(
+                "${data['name']}",
+                style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+
+          //메세지
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Flexible( //자동 줄바꿈이 가능한 Flexible
+                child: Container(
+                  //둥근 박스
+                  decoration: BoxDecoration(
+                    //BoxDecoration은 안에 color값을 지정해야함
+                      color: Color(0x30808080),
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: EdgeInsets.all(14),
+                  child: Text(
+                    "${data['message']}",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  /** (메세지) 나 */
+  Widget MyMessageUI(Map<String, dynamic> data, DateTime dateTime) {
+    return Container(
+      padding: EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          //이름
+          Container(
+            margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: const SizedBox(
+              child: Text(
+                "MyName",
+                style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+
+          //메세지
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Flexible( //자동 줄바꿈이 가능한 Flexible
+                child: Container(
+                  //둥근 박스
+                  decoration: BoxDecoration(
+                    //BoxDecoration은 안에 color값을 지정해야함
+                      color: Color(0xfffef01b),
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: EdgeInsets.all(14),
+                  child: const Text(
+                    "Message",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
+
 
 
 
