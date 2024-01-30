@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_practice/model/ChatModel.dart';
 
 class SampleFirestore extends StatefulWidget {
@@ -113,23 +114,54 @@ class _SampleFirestoreState extends State<SampleFirestore> {
 
           ),
 
-          SizedBox(
-            child: SizedBox(
-              child: Container(
-                color: Colors.yellow,
-                padding: EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    TextField(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: '메세지를 입력해주세요.',
+          /** 메세지 입력 */
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  color: Color(0x80808080),
+                  padding: EdgeInsets.all(10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      /** 입력 */
+                      Expanded(
+                        child: Container(
+                          color: Colors.yellow,
+                          child: Flexible(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(),
+                                labelText: '메세지를 입력해주세요.',
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+
+                      /** 전송 */
+                      Container(
+                        //color: Colors.greenAccent,
+                        margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                        child: ElevatedButton(
+                          onPressed: () {
+
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueGrey, // 버튼의 배경색을 파란색으로 설정
+                            // 그 외의 스타일 속성들을 필요에 따라 추가로 설정할 수 있습니다.
+                            // ex) textStyle, padding, minimumSize 등
+                            //side: BorderSide(color: Colors.greenAccent, width: 3),
+                          ),
+                          child: Text("전송"),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              )
+            ],
           ),
 
           /** Add */
@@ -141,12 +173,12 @@ class _SampleFirestoreState extends State<SampleFirestore> {
           ),
 
           /** Read */
-          ElevatedButton(
-            onPressed: () {
-              readDataFromFirestore();
-            },
-            child: Text('Read Data'),
-          ),
+          // ElevatedButton(
+          //   onPressed: () {
+          //     readDataFromFirestore();
+          //   },
+          //   child: Text('Read Data'),
+          // ),
         ],
       ),
     );
