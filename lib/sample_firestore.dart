@@ -13,12 +13,15 @@ class SampleFirestore extends StatefulWidget {
 class _SampleFirestoreState extends State<SampleFirestore> {
   //화면상단에 표시될 제목. final이 붙어 더이상 변경되지 않는다.
   final String title = 'Flutter Firestore talk';
+  final String UserName = "TestUser";
+  //final String UserName = "OtherUser";
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final List<QueryDocumentSnapshot> messageList = <QueryDocumentSnapshot>[];
   final List<ChatModel> chatList = <ChatModel>[];
 
   ScrollController scrollController = ScrollController();
+  final textEditController = TextEditingController();
 
   final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
       .collection('flutter')
@@ -27,159 +30,187 @@ class _SampleFirestoreState extends State<SampleFirestore> {
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      //외부터치시 Textfield 내리기
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        //앱 화면이 기본적으로 갖춘 기능을 선언한 위젯
+        appBar: AppBar(
+          title: Text(title),
+        ),
+        body: Column(
+          //mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            /** List */
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _usersStream,
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return const Text('Something went wrong');
+                  }
 
-    return Scaffold( //앱 화면이 기본적으로 갖춘 기능을 선언한 위젯
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: Column(
-        //mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          /** List */
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _usersStream,
-              builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.hasError) {
-                  return const Text('Something went wrong');
-                }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Text("Loading");
+                  }
 
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text("Loading");
-                }
+                  //채팅 입력에 따라 scroll 이동
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (scrollController.hasClients) {
+                      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                    } else {
+                      setState(() => null);
+                    }
+                  });
 
-                return ListView.builder(
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    DocumentSnapshot document = snapshot.data!.docs[index];
-                    Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
+                  return ListView.builder(
+                    controller: scrollController,
+                    itemCount: snapshot.data!.docs.length,
+                    itemBuilder: (context, index) {
+                      DocumentSnapshot document = snapshot.data!.docs[index];
+                      Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
 
-                    final Timestamp timestamp = data['timeStamp'];
-                    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
+                      final Timestamp timestamp = data['timeStamp'];
+                      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
 
-                    return otherMessageUI(data, dateTime);
+                      if(data['name'] == UserName){
+                        print("Myname: ${data['name']}");
+                        return MyMessageUI(data, dateTime);
+                      } else {
+                        print("Othername: ${data['name']}");
+                        return OtherMessageUI(data, dateTime);
+                      }
 
-                    // return Column(
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     SizedBox(
-                    //       child: Container(
-                    //         padding: EdgeInsets.all(20),
-                    //         margin: EdgeInsets.all(10),
-                    //         color: Color(0xff808080),
-                    //         child: Column(
-                    //           mainAxisAlignment: MainAxisAlignment.start,
-                    //           children: [
-                    //             Text("name: ${data['name']}"),
-                    //             Text("message: ${data['message']}"),
-                    //             Text("timestamp: $dateTime"),
-                    //           ],
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ],
-                    // );
+                      // return Column(
+                      //   crossAxisAlignment: CrossAxisAlignment.start,
+                      //   children: [
+                      //     SizedBox(
+                      //       child: Container(
+                      //         padding: EdgeInsets.all(20),
+                      //         margin: EdgeInsets.all(10),
+                      //         color: Color(0xff808080),
+                      //         child: Column(
+                      //           mainAxisAlignment: MainAxisAlignment.start,
+                      //           children: [
+                      //             Text("name: ${data['name']}"),
+                      //             Text("message: ${data['message']}"),
+                      //             Text("timestamp: $dateTime"),
+                      //           ],
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ],
+                      // );
 
-                    // return ListTile(
-                    //   tileColor: Colors.red,
-                    //   title: Text(data['name']),
-                    //   subtitle: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       Text("age: ${data['age']} / email: ${data['email']}"),
-                    //       Text("timestamp: $dateTime"),
-                    //     ],
-                    //   ),
-                    // );
-                  },
-                );
+                      // return ListTile(
+                      //   tileColor: Colors.red,
+                      //   title: Text(data['name']),
+                      //   subtitle: Column(
+                      //     crossAxisAlignment: CrossAxisAlignment.start,
+                      //     children: [
+                      //       Text("age: ${data['age']} / email: ${data['email']}"),
+                      //       Text("timestamp: $dateTime"),
+                      //     ],
+                      //   ),
+                      // );
+                    },
+                  );
+                },
+              ),
 
-              },
+              // <기존 코드 백업>
+              // child: ListView.builder(
+              //   reverse: true,
+              //   controller: scrollController,
+              //   itemCount: messageList.length,
+              //   itemBuilder: (BuildContext context, int index){
+              //     return Container(
+              //       height: 50,
+              //       color: Colors.greenAccent,
+              //       child: Center(
+              //         child: Text('Name: ${messageList[index]['name']} / Age: ${messageList[index]['age']} / Email: ${messageList[index]['email']}'),
+              //       ),
+              //     );
+              //   },
             ),
 
-            // <기존 코드 백업>
-            // child: ListView.builder(
-            //   reverse: true,
-            //   controller: scrollController,
-            //   itemCount: messageList.length,
-            //   itemBuilder: (BuildContext context, int index){
-            //     return Container(
-            //       height: 50,
-            //       color: Colors.greenAccent,
-            //       child: Center(
-            //         child: Text('Name: ${messageList[index]['name']} / Age: ${messageList[index]['age']} / Email: ${messageList[index]['email']}'),
-            //       ),
-            //     );
-            //   },
-
-          ),
-
-          /** 메세지 입력 */
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  color: Color(0x80808080),
-                  padding: EdgeInsets.all(10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      /** 입력 */
-                      Expanded(
-                        child: Container(
-                          color: Colors.yellow,
-                          child: Flexible(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: '메세지를 입력해주세요.',
+            /** 메세지 입력 */
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    color: Color(0xffffffff),
+                    padding: EdgeInsets.all(10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        /** 입력 */
+                        Expanded(
+                          child: Container(
+                            color: Color(0xfff9f9f9),
+                            child: Flexible(
+                              child: TextField(
+                                controller: textEditController,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  labelText: '메세지를 입력해주세요.',
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      /** 전송 */
-                      Container(
-                        //color: Colors.greenAccent,
-                        margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                        child: ElevatedButton(
-                          onPressed: () {
+                        /** 전송 */
+                        Container(
+                          //color: Colors.greenAccent,
+                          margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              print("입력한 값: ${textEditController.text}");
+                              addMessage(textEditController.text);
 
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueGrey, // 버튼의 배경색을 파란색으로 설정
-                            // 그 외의 스타일 속성들을 필요에 따라 추가로 설정할 수 있습니다.
-                            // ex) textStyle, padding, minimumSize 등
-                            //side: BorderSide(color: Colors.greenAccent, width: 3),
+                              textEditController.clear(); //입력창 초기화
+                              setState(() {
+                                //scrollController.jumpTo(scrollController.position.maxScrollExtent); //최하단 스크롤
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xff0D60E3), // 버튼의 배경색을 파란색으로 설정
+                              // 그 외의 스타일 속성들을 필요에 따라 추가로 설정할 수 있습니다.
+                              // ex) textStyle, padding, minimumSize 등
+                              //side: BorderSide(color: Colors.greenAccent, width: 3),
+                            ),
+                            child: Text(
+                              style: TextStyle(color: Colors.white),
+                              "전송",
+                            ),
                           ),
-                          child: Text("전송"),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              )
-            ],
-          ),
+                )
+              ],
+            ),
 
-          /** Add */
-          ElevatedButton(
-            onPressed: () {
-              addDataToFirestore();
-            },
-            child: Text('Add Data'),
-          ),
+            /** Add */
+            // ElevatedButton(
+            //   onPressed: () {
+            //     addDataToFirestore();
+            //   },
+            //   child: Text('Add Data'),
+            // ),
 
-          /** Read */
-          // ElevatedButton(
-          //   onPressed: () {
-          //     readDataFromFirestore();
-          //   },
-          //   child: Text('Read Data'),
-          // ),
-        ],
+            /** Read */
+            // ElevatedButton(
+            //   onPressed: () {
+            //     readDataFromFirestore();
+            //   },
+            //   child: Text('Read Data'),
+            // ),
+          ],
+        ),
       ),
     );
   }
@@ -194,32 +225,49 @@ class _SampleFirestoreState extends State<SampleFirestore> {
   void dispose() {
     super.dispose();
     scrollController.dispose();
+    textEditController.dispose();
   }
 
   /** Firestore에 데이터 추가하는 함수 */
-  Future<void> addDataToFirestore() async {
+  // Future<void> addDataToFirestore() async {
+  //   try {
+  //     final Timestamp timestamp = Timestamp.now();
+  //     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
+  //
+  //     await firestore.collection('flutter').add({
+  //       'name': UserName,
+  //       'message': "test_${DateTime.now().millisecondsSinceEpoch}",
+  //       'timeStamp' : timestamp,
+  //       'time' : dateTime,
+  //     });
+  //
+  //     print('Data added to Firestore');
+  //   } catch (e) {
+  //     print('Error adding data to Firestore: $e');
+  //   }
+  // }
+
+  /** Firestore에 데이터 추가하는 함수 */
+  Future<void> addMessage(String message) async {
     try {
       final Timestamp timestamp = Timestamp.now();
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
 
       await firestore.collection('flutter').add({
-        'name': 'TestUser',
-        'message': "test_${DateTime.now().millisecondsSinceEpoch}",
+        'name': UserName,
+        'message': message,
         'timeStamp' : timestamp,
         'time' : dateTime,
       });
 
-      print('Data added to Firestore');
-
-      //firesotre 최신화
-      //await readDataFromFirestore();
+      print('addMessage: $message');
     } catch (e) {
       print('Error adding data to Firestore: $e');
     }
   }
 
   /** (메세지) 다른사람 */
-  Widget otherMessageUI(Map<String, dynamic> data, DateTime dateTime) {
+  Widget OtherMessageUI(Map<String, dynamic> data, DateTime dateTime) {
     return Container(
       padding: EdgeInsets.all(10),
       child: Column(
@@ -278,9 +326,9 @@ class _SampleFirestoreState extends State<SampleFirestore> {
           //이름
           Container(
             margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: const SizedBox(
+            child: SizedBox(
               child: Text(
-                "MyName",
+                "${data['name']}",
                 style: TextStyle(
                     fontSize: 14,
                     color: Colors.black,
@@ -301,8 +349,8 @@ class _SampleFirestoreState extends State<SampleFirestore> {
                       color: Color(0xfffef01b),
                       borderRadius: BorderRadius.circular(10)),
                   padding: EdgeInsets.all(14),
-                  child: const Text(
-                    "Message",
+                  child: Text(
+                    "${data['message']}",
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.black,
