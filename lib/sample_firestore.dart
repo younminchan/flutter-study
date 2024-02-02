@@ -10,11 +10,13 @@ class SampleFirestore extends StatefulWidget {
   State<SampleFirestore> createState() => _SampleFirestoreState();
 }
 
+  String collectionName = "chatting";
+
 class _SampleFirestoreState extends State<SampleFirestore> {
   //화면상단에 표시될 제목. final이 붙어 더이상 변경되지 않는다.
   final String title = 'Flutter Firestore talk';
   final String UserName = "TestUser";
-  //final String UserName = "OtherUser";
+  // final String UserName = "OtherUser";
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final List<QueryDocumentSnapshot> messageList = <QueryDocumentSnapshot>[];
@@ -24,7 +26,7 @@ class _SampleFirestoreState extends State<SampleFirestore> {
   final textEditController = TextEditingController();
 
   final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
-      .collection('flutter')
+      .collection(collectionName)
       .orderBy('time', descending: false)
       .snapshots();
 
@@ -80,58 +82,10 @@ class _SampleFirestoreState extends State<SampleFirestore> {
                         print("Othername: ${data['name']}");
                         return OtherMessageUI(data, dateTime);
                       }
-
-                      // return Column(
-                      //   crossAxisAlignment: CrossAxisAlignment.start,
-                      //   children: [
-                      //     SizedBox(
-                      //       child: Container(
-                      //         padding: EdgeInsets.all(20),
-                      //         margin: EdgeInsets.all(10),
-                      //         color: Color(0xff808080),
-                      //         child: Column(
-                      //           mainAxisAlignment: MainAxisAlignment.start,
-                      //           children: [
-                      //             Text("name: ${data['name']}"),
-                      //             Text("message: ${data['message']}"),
-                      //             Text("timestamp: $dateTime"),
-                      //           ],
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ],
-                      // );
-
-                      // return ListTile(
-                      //   tileColor: Colors.red,
-                      //   title: Text(data['name']),
-                      //   subtitle: Column(
-                      //     crossAxisAlignment: CrossAxisAlignment.start,
-                      //     children: [
-                      //       Text("age: ${data['age']} / email: ${data['email']}"),
-                      //       Text("timestamp: $dateTime"),
-                      //     ],
-                      //   ),
-                      // );
                     },
                   );
                 },
               ),
-
-              // <기존 코드 백업>
-              // child: ListView.builder(
-              //   reverse: true,
-              //   controller: scrollController,
-              //   itemCount: messageList.length,
-              //   itemBuilder: (BuildContext context, int index){
-              //     return Container(
-              //       height: 50,
-              //       color: Colors.greenAccent,
-              //       child: Center(
-              //         child: Text('Name: ${messageList[index]['name']} / Age: ${messageList[index]['age']} / Email: ${messageList[index]['email']}'),
-              //       ),
-              //     );
-              //   },
             ),
 
             /** 메세지 입력 */
@@ -253,7 +207,7 @@ class _SampleFirestoreState extends State<SampleFirestore> {
       final Timestamp timestamp = Timestamp.now();
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
 
-      await firestore.collection('flutter').add({
+      await firestore.collection(collectionName).add({
         'name': UserName,
         'message': message,
         'timeStamp' : timestamp,
