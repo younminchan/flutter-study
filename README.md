@@ -1,20 +1,8 @@
 # flutter_practice
 
-Flutter 코드 연습
+### Flutter Firestore 실시간 채팅 앱  
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
+![image](https://github.com/younminchan/flutter-study/assets/14201479/60283cd3-cba0-47df-9d00-7627cfbfa30b)
 
 
 
