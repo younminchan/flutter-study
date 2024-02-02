@@ -206,8 +206,8 @@ class _SampleFirestoreState extends State<SampleFirestore> {
     try {
       final Timestamp timestamp = Timestamp.now();
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp.seconds * 1000 + timestamp.nanoseconds ~/ 1000000);
-
-      await firestore.collection(collectionName).add({
+      
+      await firestore.collection(collectionName).doc('MSG_$dateTime').set({
         'name': UserName,
         'message': message,
         'timeStamp' : timestamp,
