@@ -1,4 +1,4 @@
-# flutter_practice
+# flutter
 
 ### Flutter Firestore 실시간 채팅 앱  
 
